@@ -1,0 +1,37 @@
+set ns [new Simulator]
+set nf [open out.nam w]
+$ns namtrace-all $nf
+set tf [open out.tr w]
+$ns trace-all $tf
+proc finish(){
+global ns nf tf
+$ns flush-trace
+close $nf
+close $tf
+exec nam out.nam &
+exec awk -f p.awk out.tr &
+exec awk -f t.awk out.tr > out.gr
+exec xgraph out.gr
+exit 0
+}
+
+set n0 [$ns node]
+
+$ns duplex-link $n0 $n1 3Mb 10ms DropTail
+
+$ns queue-limit $n0 $n1 10
+
+set tcp0 [new Agent/TCP]
+$ns attach-agent $n0 $tcp0
+
+set tcp1 [new Agent/TCPSink]
+$ns attach-agent $n1 $tcp1
+
+set ftp0 [new Application/FTP]
+$ftp0 attach-agent $tcp0
+
+$ns connect $tcp0 $sink0
+$ns at 0.1 "$ftp0 start"
+$ns at 10.0 "$ftp0 stop"
+$ns at 10.1 "finish"
+$ns run
